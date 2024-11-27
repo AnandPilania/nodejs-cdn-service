@@ -1,0 +1,28 @@
+{
+    "name": "nodejs-cdn-service",
+    "version": "0.0.0",
+    "scripts": {
+        "start": "node src/index.js",
+        "dev": "nodemon src/index.js",
+        "monitor": "prometheus --config.file=prometheus.yml",
+        "test": "jest"
+    },
+    "dependencies": {
+        "cache-manager": "^5.2.3",
+        "compression": "^1.7.4",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "express-rate-limit": "^7.1.5",
+        "helmet": "^7.1.0",
+        "mime-types": "^2.1.35",
+        "prom-client": "^14.2.0",
+        "sharp": "^0.32.6",
+        "winston": "^3.11.0",
+        "zlib": "^1.0.5"
+    },
+    "devDependencies": {
+        "jest": "^29.7.0",
+        "nodemon": "^3.0.2"
+    }
+}
