@@ -3,11 +3,13 @@
 ## Installation
 
 ### Global Installation
+
 ```bash
 npm install -g @niit/cdn-upload-cli
 ```
 
 ### Local Project Installation
+
 ```bash
 npm install --save-dev @niit/cdn-upload-cli
 ```
@@ -15,6 +17,7 @@ npm install --save-dev @niit/cdn-upload-cli
 ## Usage
 
 ### Basic Usage
+
 ```bash
 # Upload files from current directory
 cdn-upload
@@ -27,6 +30,7 @@ cdn-upload ./dist -s https://cdn.example.com
 ```
 
 ### Advanced Options
+
 ```bash
 # Specify asset type
 cdn-upload ./assets -t images
@@ -39,18 +43,20 @@ asset-upload ./dist --dry-run
 ```
 
 ### Configuration File
+
 Create `cdn-upload.config.js` in your project:
 
 ```javascript
 module.exports = {
-  serverUrl: 'https://cdn.example.com/upload',
-  assetType: 'web',
-  include: ['**/*.js', '**/*.css'],
-  exclude: ['**/node_modules/**']
+    serverUrl: 'https://cdn.example.com/upload',
+    assetType: 'web',
+    include: ['**/*.js', '**/*.css'],
+    exclude: ['**/node_modules/**']
 };
 ```
 
 ## Options
+
 - `-s, --server`: CDN Server URL
 - `-t, --type`: Asset type/category
 - `-c, --config`: Path to configuration file

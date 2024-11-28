@@ -2,7 +2,7 @@ const caching = require("cache-manager").caching;
 
 const memoryCache = caching("memory", {
   max: 1000,
-    ttl: 60 * 60 * 24, // 24 hours
+  ttl: 60 * 60 * 24, // 24 hours
 });
 
 module.exports = {

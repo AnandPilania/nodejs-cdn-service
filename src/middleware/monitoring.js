@@ -3,7 +3,7 @@ const { performance } = require("perf_hooks");
 
 function monitoringMiddleware(req, res, next) {
   const startTime = performance.now();
-  const assetType = req.params.assetType || "unknown";
+  const filename = req.params.filename || "unknown";
 
   // Wrap response end to track metrics
   const originalEnd = res.end;
@@ -13,14 +13,14 @@ function monitoringMiddleware(req, res, next) {
 
     // Track request metrics
     metricsService.trackRequest(
-      assetType,
+      filename,
       status < 400 ? "success" : "error",
       duration,
     );
 
     // Track error if applicable
     if (status >= 400) {
-      metricsService.trackError(`http_${status}`, assetType);
+      metricsService.trackError(`http_${status}`, filename);
     }
 
     return originalEnd.apply(this, args);

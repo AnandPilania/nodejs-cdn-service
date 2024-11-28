@@ -2,10 +2,7 @@ const prometheus = require("prom-client");
 
 class MetricsService {
   constructor() {
-    // Configure Prometheus
     prometheus.collectDefaultMetrics();
-
-    // Custom CDN-specific metrics
     this.initializeMetrics();
   }
 
@@ -120,5 +117,4 @@ class MetricsService {
   }
 }
 
-// Singleton export
 module.exports = new MetricsService();

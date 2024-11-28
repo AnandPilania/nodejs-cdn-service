@@ -3,7 +3,6 @@ const { createLogger, format, transports } = winston;
 const path = require("path");
 const metricsService = require("../utils/metrics");
 
-// Custom log format
 const logFormat = format.combine(
   format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   format.errors({ stack: true }),
@@ -11,7 +10,6 @@ const logFormat = format.combine(
   format.json(),
 );
 
-// Log transport configurations
 const consoleTransport = new transports.Console({
   format: format.combine(format.colorize(), format.simple()),
 });
@@ -28,7 +26,6 @@ const errorTransport = new transports.File({
   format: logFormat,
 });
 
-// Create logger
 const logger = createLogger({
   level: process.env.LOG_LEVEL || "info",
   transports: [consoleTransport, fileTransport, errorTransport],
@@ -44,7 +41,6 @@ const logger = createLogger({
   ],
 });
 
-// Enhance logger with metrics tracking
 const enhancedLogger = {
   ...logger,
   warn: (message, meta = {}) => {
@@ -54,7 +50,6 @@ const enhancedLogger = {
     logger.info(message, meta);
   },
   log: (level, message, meta = {}) => {
-    // Ensure level is a valid winston logging method
     const validLevels = [
       "error",
       "warn",
@@ -66,21 +61,17 @@ const enhancedLogger = {
     ];
     const safeLevel = validLevels.includes(level) ? level : "info";
 
-    // Track errors in metrics if applicable
     if (safeLevel === "error" && meta.assetType) {
       metricsService.trackError(meta.errorType || "unknown", meta.assetType);
     }
 
-    // Log the message
     logger[safeLevel](message, meta);
   },
   error: (message, meta = {}) => {
-    // Track errors in metrics
     if (meta.assetType) {
       metricsService.trackError(meta.errorType || "unknown", meta.assetType);
     }
 
-    // Log the error
     logger.error(message, meta);
   },
 };
