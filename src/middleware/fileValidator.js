@@ -1,34 +1,28 @@
 const path = require("path");
 const {
-    ASSET_TYPES,
-    MAX_FILE_SIZE,
-    ALLOWED_MIME_TYPES,
+  getMimeType,
+  ALLOWED_MIME_TYPES,
 } = require("../config/storage");
 
 function validateFileRequest(req, res, next) {
-    const { assetType, filename } = req.params;
+  const { filename } = req.params;
 
-    // Validate asset type
-    if (!ASSET_TYPES[assetType]) {
-        return res.status(400).json({ error: "Invalid asset type" });
-    }
+  const mimeType = getMimeType(filename);
 
-    // Prevent directory traversal
-    const normalizedFilename = path
-        .normalize(filename)
-        .replace(/^(\.\.[/\\])+/, "");
-    const filePath = path.join(ASSET_TYPES[assetType], normalizedFilename);
+  // Validate asset type
+  if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+    return res.status(400).json({ error: "Invalid asset mimeType type" });
+  }
 
-    // Additional security checks
-    if (!filePath.startsWith(ASSET_TYPES[assetType])) {
-        return res.status(403).json({ error: "Access denied" });
-    }
+  // Prevent directory traversal
+  const normalizedFilename = path
+    .normalize(filename)
+    .replace(/^(\.\.[/\\])+/, "");
+  const filePath = path.join('.', 'assets', normalizedFilename);
 
-    // Optional: Add mime type validation if needed
-    // You'd need to implement mime type detection here
-
-    req.filePath = filePath;
-    next();
+  req.mimeType = mimeType;
+  req.filePath = filePath;
+  next();
 }
 
 module.exports = validateFileRequest;

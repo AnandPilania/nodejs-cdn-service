@@ -1,0 +1,25 @@
+{
+    "name": "@niit/cdn-upload-cli",
+    "version": "0.0.1",
+    "description": "Flexible asset upload CLI for CDN deployment",
+    "main": "lib/index.js",
+    "engines": {
+        "node": ">=16.0.0"
+    },
+    "scripts": {
+        "start": "node bin/cdn-upload.js",
+        "build": "pkg . --targets node16-linux,node16-macos,node16-win",
+        "prepublishOnly": "npm run build"
+    },
+    "author": "Anand Pilania",
+    "dependencies": {
+        "axios": "^1.7.8",
+        "form-data": "^4.0.1",
+        "fs-extra": "^10.1.0",
+        "glob": "^8.0.3",
+        "yargs": "^17.5.1"
+    },
+    "devDependencies": {
+        "pkg": "^5.8.1"
+    }
+}

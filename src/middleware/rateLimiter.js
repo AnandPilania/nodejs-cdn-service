@@ -15,4 +15,8 @@ const rateLimiter = rateLimit({
     },
 });
 
-module.exports = rateLimiter;
+const unless = (path, middleware) => (req, res, next) => (path === req.path ? next() : middleware(req, res, next));
+
+module.exports = {
+    unless, rateLimiter
+};
