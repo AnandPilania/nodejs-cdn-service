@@ -49,12 +49,11 @@ const handleCache = async (
   content,
   noCache,
   alwaysLatest,
-  setCacheFunc,
 ) => {
   if (noCache) {
     await deleteCache(cacheKey);
   }
-  return getCache(cacheKey).then((cachedContent) => {
+  return getCache(cacheKey).then(async (cachedContent) => {
     if (cachedContent && !alwaysLatest) {
       res.set("X-Cache", "HIT");
       res.send(cachedContent);
@@ -62,72 +61,87 @@ const handleCache = async (
       res.set("X-Cache", "MISS");
       sendCompressedContent(res, content, req);
       if (!alwaysLatest) {
-        setCacheFunc(cacheKey, content, { ttl: 60 * 60 * 24 });
+        await setCache(cacheKey, content);
       }
     }
   });
 };
 
 const getZoneAndConfig = async (files) => {
-  if (files.length === 1) {
-    const file = files[0];
-    const assetInfo = await createAssetIdentifier(file.filePath, file.filePath);
+  const zone = detectAssetZone(files[0].filePath);
+  return {
+    zone,
+    zoneConfig: ASSET_ZONES[zone] || ASSET_ZONES["dynamic"],
+  };
+};
 
-    return {
-      assetInfo,
-      zone: assetInfo.zone,
-      zoneConfig: ASSET_ZONES[assetInfo.zone] || ASSET_ZONES["dynamic"],
-    };
-  } else {
-    const zone = detectAssetZone(files[0].filePath);
-    return {
-      zone: zone,
-      zoneConfig: ASSET_ZONES[zone] || ASSET_ZONES["dynamic"],
-    };
+const hasVal = (key) => key !== undefined && key !== null;
+
+const resolveFilePath = async (file, identifier, isCssOrJs = false) => {
+  const fallbackPaths = [
+    file.filePath,
+    file.filePath.replace(file.src, "org1"),
+    file.filePath.replace(`\\${file.src}`, ""),
+  ];
+
+  for (const path of fallbackPaths) {
+      console.log(path);
+    try {
+      const content = await fs.readFile(path);
+      if (path !== file.filePath && isCssOrJs) {
+        identifier += `\n/*--- PATH UPDATED: ${path} ---*/\n`;
+      }
+      file.filePath = path;
+      return { content, identifier };
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    }
   }
+
+  if (!isCssOrJs) {
+    throw new Error("File not found");
+  }
+
+  return { content: Buffer.from(`/* 404 */`), identifier };
 };
 
 router.get("/:assetSrc/:filename(*)", fileValidator, async (req, res) => {
   const files = req.files;
   const mimeType = files[0].mimeType;
-  const noCache = req.query.noCache !== undefined && req.query.noCache !== null;
-  const alwaysLatest =
-    req.query.latest !== undefined && req.query.latest !== null;
+  const noCache = hasVal(req.query.noCache);
+  const alwaysLatest = hasVal(req.query.latest);
+  let cacheKey = "cdn";
 
   try {
-    const { assetInfo, zone, zoneConfig } = await getZoneAndConfig(files);
+    const { zone, zoneConfig } = await getZoneAndConfig(files);
+    const fileContents = await Promise.all(
+      files.map(async (file) => {
+        const isCssOrJs = [".css", ".js"].includes(file.ext);
+        const { content, identifier } = await resolveFilePath(
+          file,
+          `\n/*--- File: ${file.filePath} ---*/\n`,
+          isCssOrJs,
+        );
 
-    let content, cacheKey, ETag;
+        if (!isCssOrJs) {
+          return content;
+        }
 
-    if (files.length === 1) {
-      const file = files[0];
-      cacheKey = assetInfo.cacheKey;
-      ETag = assetInfo.etag;
-      const fileBuffer = await fs.readFile(file.filePath);
-      content = await compressAsset(fileBuffer, mimeType);
-    } else {
-      const fileContents = await Promise.all(
-        files.map((file) => fs.readFile(file.filePath)),
-      );
-      const concatenatedContent = Buffer.concat(fileContents);
-      content = await compressAsset(concatenatedContent, mimeType);
-      const hashes = await Promise.all(
-        files.map((file) => generateFileHash(file.filePath)),
-      );
-      cacheKey = `concat-${hashes.join("-")}`;
-      ETag = cacheKey;
-    }
+        const identifierBuffer = Buffer.from(identifier);
 
-    setResponseHeaders(res, mimeType, ETag, zone, zoneConfig);
-    await handleCache(
-      req,
-      res,
-      cacheKey,
-      content,
-      noCache,
-      alwaysLatest,
-      await setCache,
+        const cKey = ":" + (await generateFileHash(file.filePath));
+        cacheKey += cKey;
+
+        return Buffer.concat([identifierBuffer, content, identifierBuffer]);
+      }),
     );
+    const concatenatedContent = Buffer.concat(fileContents);
+    const content = await compressAsset(concatenatedContent, mimeType);
+
+    setResponseHeaders(res, mimeType, cacheKey, zone, zoneConfig);
+    await handleCache(req, res, cacheKey, content, noCache, alwaysLatest);
   } catch (error) {
     log("error", "Asset serving error", {
       files,

@@ -26,7 +26,7 @@ function validateFileRequest(req, res, next) {
       .replace(/^(\.\.[/\\])+/, "");
     const filePath = path.join(".", "assets", assetSrc, normalizedFilename);
 
-    validatedFiles.push({ filePath, mimeType });
+    validatedFiles.push({ filePath, mimeType, src: assetSrc, ext: path.extname(filename).toLowerCase() });
   }
 
   if (filePaths.length > 1) {
